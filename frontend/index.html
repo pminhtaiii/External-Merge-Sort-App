@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="vi" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>External Merge Sort Algorithm</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                }
+            }
+        }
+    </script>
+    <style>
+        .bg-dot-pattern { background-image: radial-gradient(#cbd5e1 1.5px, transparent 1.5px); background-size: 24px 24px; }
+        .loader-bar { height: 4px; width: 100%; background-color: #e2e8f0; overflow: hidden; border-radius: 2px; }
+        .loader-bar-fill {
+            height: 100%; background-color: #2563eb; width: 50%;
+            animation: indeterminateAnimation 1.5s infinite linear; transform-origin: 0% 50%;
+        }
+        @keyframes indeterminateAnimation {
+            0% { transform:  translateX(0) scaleX(0); }
+            40% { transform:  translateX(0) scaleX(0.4); }
+            100% { transform:  translateX(100%) scaleX(0.5); }
+        }
+    </style>
+</head>
+<body class="h-full bg-slate-50 text-slate-800 antialiased relative overflow-hidden flex flex-col items-center justify-center">
+
+    <div class="absolute inset-0 z-0 pointer-events-none">
+        <div class="absolute inset-0 bg-dot-pattern opacity-[0.4]"></div>
+        <div class="absolute top-0 left-1/4 w-96 h-96 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
+        <div class="absolute top-0 right-1/4 w-96 h-96 bg-indigo-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+        <div class="absolute -bottom-32 left-1/3 w-96 h-96 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
+    </div>
+
+    <main class="w-full max-w-2xl bg-white/80 backdrop-blur-sm rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white z-10 relative">
+        <div class="px-8 py-6 border-b border-slate-100 flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="bg-gradient-to-br from-blue-600 to-indigo-600 w-10 h-10 rounded-lg flex items-center justify-center text-white shadow-lg shadow-blue-500/30">
+                     <i class="fa-solid fa-server text-sm"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-semibold text-slate-900 tracking-tight">Data Processor</h1>
+                    <p class="text-xs text-slate-500 font-medium">External Merge Sort Algorithm</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 px-3 py-1 bg-emerald-50 text-emerald-700 text-xs font-medium rounded-full border border-emerald-100">
+                <span class="w-2 h-2 rounded-full bg-emerald-500"></span> System Ready
+            </div>
+        </div>
+
+        <div class="p-8">
+            <div id="alert-box" class="hidden mb-6 p-4 rounded-lg text-sm flex items-start gap-3 border shadow-sm">
+                <i id="alert-icon" class="fa-solid mt-0.5 text-base"></i>
+                <div>
+                    <h4 id="alert-title" class="font-semibold">Thông báo</h4>
+                    <p id="alert-message" class="mt-1 text-slate-600">Nội dung</p>
+                </div>
+            </div>
+
+            <div id="drop-zone" class="group relative h-64 border-2 border-dashed border-slate-300 rounded-2xl flex flex-col justify-center items-center text-center transition-all duration-300 hover:border-blue-500 hover:bg-blue-50/30 cursor-pointer bg-white">
+                <input type="file" id="fileInput" class="hidden" accept=".bin">
+                
+                <div id="upload-placeholder" class="transition-all duration-300 group-hover:scale-105 p-6">
+                    <div class="inline-flex items-center justify-center h-16 w-16 rounded-full bg-slate-50 text-blue-600 shadow-sm mb-4 ring-1 ring-slate-200">
+                        <i class="fa-solid fa-cloud-arrow-up text-2xl"></i>
+                    </div>
+                    <h3 class="text-base font-semibold text-slate-700">Kéo thả file Binary vào đây</h3>
+                    <p class="text-sm text-slate-500 mt-2">hoặc bấm để chọn file từ máy tính</p>
+                </div>
+
+                <div id="file-info" class="hidden absolute inset-0 z-10 flex flex-col justify-center items-center bg-white rounded-2xl border-2 border-blue-500/20 bg-blue-50/10 backdrop-blur-sm">
+                    <div class="bg-white p-4 pr-6 rounded-xl shadow-[0_4px_20px_rgba(0,0,0,0.05)] border border-slate-100 flex items-center gap-4 max-w-[90%] w-full animate-[fadeIn_0.3s_ease-out]">
+                        <div class="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 shrink-0 border border-blue-100">
+                            <i class="fa-solid fa-database text-lg"></i>
+                        </div>
+                        <div class="flex-1 min-w-0 text-left">
+                            <p id="filename" class="font-semibold text-slate-800 text-sm truncate">data.bin</p>
+                            <div class="flex items-center gap-2 mt-1">
+                                <span id="filesize" class="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded">0 MB</span>
+                                <span class="text-[10px] text-green-600 font-medium flex items-center gap-1"><i class="fa-solid fa-circle-check text-[6px]"></i> Sẵn sàng</span>
+                            </div>
+                        </div>
+                        <button id="removeFileBtn" class="group/btn w-8 h-8 flex items-center justify-center rounded-full hover:bg-red-50 text-slate-400 hover:text-red-500 transition-all" title="Hủy chọn file">
+                            <i class="fa-solid fa-xmark text-lg"></i>
+                        </button>
+                    </div>
+                    <p class="mt-4 text-xs text-slate-400 hover:text-blue-600 cursor-pointer transition-colors font-medium">
+                        <i class="fa-solid fa-rotate-right mr-1"></i> Bấm vào đây để chọn file khác
+                    </p>
+                </div>
+            </div>
+
+            <button id="sortBtn" onclick="processSort()" disabled 
+                class="w-full mt-6 py-3.5 px-6 bg-slate-900 hover:bg-slate-800 text-white font-medium rounded-xl transition-all disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed shadow-lg flex items-center justify-center gap-2">
+                <span>Thực hiện Sắp xếp</span> <i class="fa-solid fa-arrow-right text-sm"></i>
+            </button>
+
+            <button id="visBtn" disabled 
+                class="w-full mt-3 py-3 px-6 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-medium rounded-xl transition-all disabled:hidden border border-indigo-200 hidden items-center justify-center gap-2">
+                <i class="fa-solid fa-clapperboard"></i> <span>Minh họa Thuật toán</span>
+            </button>
+
+            <div class="mt-7 text-center">
+                <p class="text-sm text-slate-500">
+                    Chưa có file data? 
+                    <button onclick="document.getElementById('generateModal').classList.remove('hidden')" class="text-blue-600 font-semibold hover:text-blue-700 hover:underline transition-all">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>Tạo dữ liệu mẫu
+                    </button>
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <div id="generateModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-sm transition-opacity">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 class="font-semibold text-slate-800"><i class="fa-solid fa-file-code text-blue-600 mr-2"></i>Tạo File Binary Mẫu</h3>
+                <button onclick="document.getElementById('generateModal').classList.add('hidden')" class="text-slate-400 hover:text-red-500 transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-700 mb-1">Tên file</label>
+                    <input type="text" id="genFileName" value="dummy_data.bin" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-700 mb-1">Kích thước file mong muốn</label>
+                    <div class="flex gap-2">
+                        <input type="number" id="genFileSize" value="50" min="1" step="0.1" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Nhập dung lượng...">
+                        <select id="genFileUnit" class="px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer">
+                            <option value="KB" selected>KB</option>
+                            <option value="MB">MB</option>
+                            <option value="GB">GB</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+                <button onclick="document.getElementById('generateModal').classList.add('hidden')" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-colors">Hủy</button>
+                <button id="confirmGenerateBtn" onclick="generateDummyData()" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors flex items-center gap-2">
+                    <span>Thực hiện Tạo</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="visSettingsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-[fadeIn_0.2s_ease-out]">
+            <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                <h3 class="font-semibold text-slate-800"><i class="fa-solid fa-sliders text-blue-600 mr-2"></i>Cài đặt Minh họa</h3>
+                <button onclick="closeVisSettings()" class="text-slate-400 hover:text-red-500 transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            
+            <div class="p-6 space-y-5">
+                <div>
+                    <label class="block text-xs font-medium text-slate-700 mb-1">Kích thước Chunk (RAM giả lập)</label>
+                    <input type="number" id="visChunkSize" value="10" min="2" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Số lượng phần tử / file tạm">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-700 mb-1">Tốc độ chạy thuật toán</label>
+                    <select id="visSpeed" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer">
+                        <option value="1000">Chậm</option>
+                        <option value="500" selected>Bình thường</option>
+                        <option value="200">Nhanh</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end gap-3">
+                <button onclick="closeVisSettings()" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-colors">Hủy</button>
+                <button onclick="confirmAndStartVis()" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors flex items-center gap-2">
+                    <i class="fa-solid fa-play"></i> Bắt đầu chạy
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="visModal" class="hidden fixed inset-0 z-[60] bg-slate-50 flex flex-col">
+        <div class="px-6 py-4 bg-white border-b border-slate-200 shadow-sm flex justify-between items-center z-10">
+            <div>
+                <h3 class="font-bold text-lg text-slate-800"><i class="fa-solid fa-diagram-project text-blue-600 mr-2"></i> Minh họa External Merge Sort</h3>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="prevVisStep()" title="Tua lại 1 bước" class="px-4 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
+                    <i class="fa-solid fa-backward-step"></i> Tua lại
+                </button>
+                
+                <button id="visNextBtn" onclick="toggleAutoPlay()" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors shadow-sm flex items-center gap-2">
+                    <i class="fa-solid fa-pause"></i> Tạm dừng
+                </button>
+                
+                <div class="w-px h-6 bg-slate-200 mx-1"></div> <button onclick="closeVisModal()" class="px-3 py-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Đóng">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+        </div>
+        <div class="flex-1 overflow-auto p-8 relative bg-slate-50/50 bg-dot-pattern">
+            <div id="visCanvas" class="max-w-4xl mx-auto space-y-6 pb-20"></div>
+        </div>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
